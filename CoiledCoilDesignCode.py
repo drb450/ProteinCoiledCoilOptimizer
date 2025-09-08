@@ -1,11 +1,10 @@
-"""
-Coiled-coil design. Trimodal MC search of coiled-coil proteins using criteria for rosetta score, N-terminal EEbcf, and C-terminal EEbcf
+# Coiled-coil design. Trimodal MC search of coiled-coil proteins using criteria for rosetta score, N-terminal EEbcf, and C-terminal EEbcf
 
-Citation: "Computational prediction of coiled-coil protein gelation dynamics and structure" 
-by Dustin Britton.
+# Citation: "Computational prediction of coiled-coil protein gelation dynamics and structure" 
+# by Dustin Britton.
 
-Version: 3.0
-"""
+# Version: 3.0
+
 
 import os
 import sys
@@ -617,4 +616,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
