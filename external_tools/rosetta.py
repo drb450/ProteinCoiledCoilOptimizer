@@ -74,10 +74,95 @@ class RosettaTool(ExternalTool):
         ])
         
         return cmd
-    
+  
     def analyze_scores(self) -> Tuple[float, str]:
+
         score_file = 'temp_score.sc'
         
         try:
             with open(score_file, 'r') as f:
-                lines = f.
+                lines = f.readlines()
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Score file not found: {score_file}. Rosetta may have failed.")
+        
+        if len(lines) < 3:
+            raise ValueError("Insufficient score data in output file")
+        
+        # Parse scores from score file
+        scores_data = []
+        for line in lines[2:]:  # Skip header lines
+            try:
+                parts = line.split()
+                if len(parts) < 22:  # Ensure we have enough columns
+                    continue
+                    
+                score = float(parts[1])
+                structure_name = parts[21] + '.pdb'
+                scores_data.append((score, structure_name))
+                
+            except (IndexError, ValueError) as e:
+                self.logger.warning(f"Could not parse score from line: {line.strip()}")
+                continue
+        
+        if not scores_data:
+            raise ValueError("No valid scores found in output file")
+        
+        # Find best score
+        best_score, best_structure = min(scores_data, key=lambda x: x[0])
+        
+        self.logger.debug(f"Best score: {best_score}, Structure: {best_structure}")
+        return best_score, best_structure
+    
+    def get_score_summary(self) -> dict:
+        score_file = 'temp_score.sc'
+        
+        try:
+            with open(score_file, 'r') as f:
+                lines = f.readlines()
+        except FileNotFoundError:
+            return {}
+        
+        scores = []
+        for line in lines[2:]:  # Skip headers
+            try:
+                score = float(line.split()[1])
+                scores.append(score)
+            except (IndexError, ValueError):
+                continue
+        
+        if not scores:
+            return {}
+        
+        return {
+            'num_structures': len(scores),
+            'best_score': min(scores),
+            'worst_score': max(scores),
+            'mean_score': sum(scores) / len(scores),
+            'score_range': max(scores) - min(scores)
+        }
+    
+    def cleanup_output_files(self) -> None:
+        import glob
+        import os
+        
+        patterns = ["temp_*.pdb", "temp_score.sc", "*.fasc"]
+        
+        for pattern in patterns:
+            for file_path in glob.glob(pattern):
+                try:
+                    os.remove(file_path)
+                    self.logger.debug(f"Removed file: {file_path}")
+                except OSError as e:
+                    self.logger.warning(f"Could not remove {file_path}: {e}")
+    
+    def validate_output(self) -> bool:
+
+        score_file = Path('temp_score.sc')
+        if not score_file.exists():
+            return False
+        
+        # Check if we have any structure files
+        import glob
+        structure_files = glob.glob("temp_*.pdb")
+        
+        return len(structure_files) > 0
